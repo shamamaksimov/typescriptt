@@ -1,45 +1,32 @@
-/**
-  * Плоттер поддерживает пять команд:
-
-  * 1. Переместить каретку на некоторое расстояние в текущем направлении.
-  * 2. Повернуть на определенное количество градусов по часовой стрелке или против часовой стрелки.
-  * 3. Опустить или поднять каретку. Когда каретка опущена, плоттер при перемещении рисует линию.
-  * 4. Установить цвет линии (один из черного, красного или зелёного).
-  * 5. Установить начальную позицию каретки.
- */
-
-/**
- * Объявление // Интерфейс Logger
+// инт
 interface Logger {
     log(message: string): void;
 }
 
-// Класс LogToConsole
+// клс
 class LogToConsole implements Logger {
     log(message: string): void {
         console.log(message);
     }
 }
 
-// Типы
+// типы
 type Point = number;
 type Distance = number;
 type Angle = number;
 type Position = { x: Point; y: Point };
 
-// Перечисления
 enum CarriageState {
     UP,
     DOWN
 }
 
 enum LineColor {
-    BLACK = "черный",
+    BLACK = "чёрный",
     RED = "красный",
     GREEN = "зелёный"
 }
 
-// Класс Plotter
 class Plotter {
     private position: Position;
     private angle: Angle;
@@ -55,11 +42,18 @@ class Plotter {
         this.carriageState = CarriageState.UP;
     }
 
+    private calcNewPosition(distance: Distance, angle: Angle, current: Position): Position {
+        const angle_in_rads = angle * (Math.PI / 180.0);
+        const x = current.x + distance * Math.cos(angle_in_rads);
+        const y = current.y + distance * Math.sin(angle_in_rads);
+        return { x: Math.round(x), y: Math.round(y) };
+    }
+
     move(distance: Distance): void {
-        const newPosition = this.calcNewPosition(distance, this.angle, this.position);
+        let newPosition = this.calcNewPosition(distance, this.angle, this.position);
         
         if (this.carriageState === CarriageState.DOWN) {
-            this.drawLine(this.position, newPosition, this.color);
+            this.logger.log(`Чертим линию из (${this.position.x}, ${this.position.y}) в (${newPosition.x}, ${newPosition.y}) используя ${this.color} цвет.`);
         } else {
             this.logger.log(`Передвигаем на ${distance} от точки (${this.position.x}, ${this.position.y})`);
         }
@@ -72,12 +66,12 @@ class Plotter {
         this.angle = (this.angle + angle) % 360.0;
     }
 
-    penUp(): void {
+    carriageUp(): void {
         this.logger.log("Поднимаем каретку");
         this.carriageState = CarriageState.UP;
     }
 
-    penDown(): void {
+    carriageDown(): void {
         this.logger.log("Опускаем каретку");
         this.carriageState = CarriageState.DOWN;
     }
@@ -88,233 +82,40 @@ class Plotter {
     }
 
     setPosition(position: Position): void {
-        this.logger.log(`Устанавливаем позицию каретки в (${position.x}, ${position.y}).`);
+        this.logger.log(`Установка позиции каретки в (${position.x}, ${position.y}).`);
         this.position = position;
     }
 
-    private drawLine(from: Position, to: Position, color: LineColor): void {
-        this.logger.log(`...Чертим линию из (${from.x}, ${from.y}) в (${to.x}, ${to.y}) используя ${color} цвет.`);
-    }
-
-    private calcNewPosition(distance: Distance, angle: Angle, current: Position): Position {
-        const angle_in_rads = angle * (Math.PI / 180.0);
-        const x = current.x + distance * Math.cos(angle_in_rads);
-        const y = current.y + distance * Math.sin(angle_in_rads);
-        return { x: Math.round(x), y: Math.round(y) };
-    }
-
     drawTriangle(size: number): void {
-        this.penDown();
-        for(let i = 0; i < 3; ++i) {
+        this.carriageDown();
+        for(let i = 0; i < 3; i++) {
             this.move(size);
             this.turn(120.0);
         }
-        this.penUp();
+        this.carriageUp();
     }
 
     drawSquare(size: number): void {
-        this.penDown();
-        for(let i = 0; i < 4; ++i) {
+        this.carriageDown();
+        for(let i = 0; i < 4; i++) {
             this.move(size);
             this.turn(90.0);
         }
-        this.penUp();
+        this.carriageUp();
     }
 }
 
-// Пример использования
-const logger: Logger = new LogToConsole();
-const plotter = new Plotter(logger);
-plotter.drawTriangle(100.0);
+function drawingTriangle(pl: Plotter, size: number): void {
+    pl.setColor(LineColor.BLACK);
+    for(let i = 0; i < 3; i++) {
+        pl.move(size);
+        pl.turn(120.0);
+    }
+}
+
+const plotter = new Plotter(new LogToConsole());
+drawingTriangle(plotter, 100.0);
+
 plotter.setPosition({ x: 10.0, y: 10.0 });
 plotter.setColor(LineColor.RED);
 plotter.drawSquare(80.0);
- */
-
-type Point = number;
-type Distance = number;
-type Angle = number;
-type Position = { x: Point; y: Point };
-enum CarriageState {
-  UP,
-  DOWN
-}
-enum LineColor {
-  BLACK = "чорный",
-  RED = "красный",
-  GREEN = "зелёный"
-}
-type PlotterState = {
-  position: Position;
-  angle: Angle;
-  color: LineColor;
-  carriageState: CarriageState;
-};
-type Printer = (s: string) => void;
-
-/**
- * Функции плотера
- */
-
-/**
- * Чертит линию от координат from к координатам to
- */
-function drawLine(prt: Printer, from: Position, to: Position, color: LineColor): void {
-  prt(`...Чертим линию из (${from.x}, ${from.y}) в (${to.x}, ${to.y}) используя ${color} цвет.`);
-}
-
-/**
- * Вычисляет и возвращает новую позицию
- */
-function calcNewPosition(distance: Distance, angle: Angle, current: Position): Position {
-  // Преобразуем градусы в радианы при 180.0 градусов = 1 pi радиан
-  const angle_in_rads = angle * (Math.PI / 180.0) * 1.0;
-  // новая позиция
-  const x = current.x + distance * Math.cos(angle_in_rads);
-  const y = current.y + distance * Math.sin(angle_in_rads);
-  // возвращаем новую позицию
-  return { x: Math.round(x), y: Math.round(y) };
-}
-
-/**
- * Перемещает каретку на расстояние distance.
- * Возвращает новый PlotterState
- */
-function move(prt: Printer, distance: Distance, state: PlotterState): PlotterState {
-  // вычисляем новую позицию
-  let newPosition = calcNewPosition(distance, state.angle, state.position);
-  // draw line if needed
-  if (state.carriageState === CarriageState.DOWN) {
-    // Здесь следует отрисовка линии
-    drawLine(prt, state.position, newPosition, state.color);
-  }else{
-    prt(`Передвигаем на ${distance} от точки (${state.position.x}, ${state.position.y})`);
-  }
-  // изменяем состояние
-  const retState = { ...state };
-  retState.position = newPosition;
-  return retState;
-}
-
-/**
- * Поворачивает каретку на угол angle
- * Возвращает новый PlotterState
- */
-function turn(prt: Printer, angle: Angle, state: PlotterState): PlotterState {
-  prt(`Поворачиваем на ${angle} градусов`);
-  // вычисляем новый угол
-  const newAngle = (state.angle + angle) % 360.0;
-  // изменяем состояние
-  const retState = { ...state };
-  retState.angle = newAngle;
-  return retState;
-}
-
-/**
- * Поднимает каретку
- * Возвращает новый PlotterState
- */
-function carriageUp(prt: Printer, state: PlotterState): PlotterState {
-  prt("Поднимаем каретку");
-  // изменяем состояние
-  const retState = { ...state };
-  retState.carriageState = CarriageState.UP;
-  return retState;
-}
-
-/**
- * Опускает каретку
- * Возвращает новый PlotterState
- */
-function carriageDown(prt: Printer, state: PlotterState): PlotterState {
-  prt("Опускаем каретку");
-  // изменяем состояние
-  const retState = { ...state };
-  retState.carriageState = CarriageState.DOWN;
-  return retState;
-}
-
-/**
- * Устанавливает цвет печати в color
- * Возвращает новый PlotterState
- */
-function setColor(prt: Printer, color: LineColor, state: PlotterState): PlotterState {
-  prt(`Устанавливаем ${color} цвет линии.`);
-  // изменяем состояние
-  const retState = { ...state };
-  retState.color = color;
-  return retState;
-}
-
-/**
- * Устанавливает позицию каретки в position
- * Возвращает новый PlotterState
- */
-function setPosition(prt: Printer, position: Position, state: PlotterState): PlotterState {
-  prt(`Устанавливаем позицию каретки в (${position.x}, ${position.y}).`);
-  // изменяем состояние
-  const retState = { ...state };
-  retState.position = position;
-  return retState;
-}
-
-/**
- * Функции для черчения фигур
- */
-
-/**
- * Чертит треугольник со сторонами size
- */
-function drawTriangle(prt: Printer, size: number, state: PlotterState): PlotterState {
-  state = carriageDown(prt, state);
-  for(let i=0; i<3; ++i){
-    state = move(prt, size, state);
-    state = turn(prt, 120.0, state);
-  }
-  return carriageUp(prt, state);
-}
-
-/**
- * Чертит квадрат со сторонами size
- */
-function drawSquare(prt: Printer, size: number, state: PlotterState): PlotterState {
-  state = carriageDown(prt, state);
-  for(let i=0; i<4; ++i){
-    state = move(prt, size, state);
-    state = turn(prt, 90.0, state);
-  }  
-  return carriageUp(prt, state);
-}
-
-/**
- * Инициализация приложения
- */
-const printer: Printer = console.log;
-
-function initializePlotterState(position: Position, angle: Angle, color: LineColor, carriageState: CarriageState): PlotterState {
-  return {
-    position: position,
-    angle: angle,
-    color: color,
-    carriageState: carriageState
-  };
-}
-
-let initPosition: Position = { x: 0.0, y: 0.0 };
-let initColor: LineColor = LineColor.BLACK;
-let initAngle: Angle = 0.0;
-let initCarriageState: CarriageState = CarriageState.UP;
-
-// Начальное состояние плоттера
-let plotterState = initializePlotterState(initPosition, initAngle, initColor, initCarriageState);
-
-/**
- * Процесс черчения
- */
-
-
-plotterState = drawTriangle(printer, 100.0, plotterState);
-
-plotterState = setPosition(printer, { x: 10.0, y: 10.0 }, plotterState);
-plotterState = setColor(printer, LineColor.RED, plotterState);
-plotterState = drawSquare(printer, 80.0, plotterState);
